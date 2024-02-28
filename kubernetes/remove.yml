@@ -1,0 +1,21 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  tasks:
+    - name: Reset Kubeadm
+      command: kubeadm reset -f 
+
+    - name: Erase Kube
+      yum:
+        state: absent
+        name:
+          - kubeadm
+          - kubectl
+          - kubelet
+          - kubernetes-cni
+          - kube*
+
+    - name: Remove file and dir
+      command: rm -rf /etc/cni /etc/kubernetes /var/lib/dockershim /var/lib/etcd /var/lib/kubelet /var/run/kubernetes ~/.kube
