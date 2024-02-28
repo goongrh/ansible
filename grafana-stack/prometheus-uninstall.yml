@@ -1,0 +1,37 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Stop Prometheus
+      command: systemctl stop prometheus
+    - name: Disable Prometheus
+      command: systemctl disable prometheus
+    - name: Remove User for Prometheus
+      ansible.builtin.user:
+        name: prometheus
+        state: absent
+        remove: yes
+    - name: Remove Directory for Prometheus
+      file:
+        path: /etc/prometheus
+        state: absent
+    - name: Remove Directory for Prometheus
+      file:
+        path: /var/lib/prometheus
+        state: absent
+    - name: Remove prometheus
+      file:
+        path: /usr/local/bin/prometheus
+        state: absent
+    - name: Remove promtool
+      file:
+        path: /usr/local/bin/promtool
+        state: absent
+    - name: Remove Prometheus Service File
+      file:
+        path: /etc/systemd/system/prometheus.service
+        state: absent
+    - name: Reload daemon
+      command: systemctl daemon-reload

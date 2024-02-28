@@ -1,0 +1,82 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Download & Extract Node Exporter 1.7.0 Package
+      ansible.builtin.unarchive:
+        src: https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
+        dest: /home/agung/
+        remote_src: yes
+    - name: Create User for Node Exporter
+      ansible.builtin.user:
+        name: node_exporter
+        state: present
+        create_home: no
+        shell: /bin/false
+    - name: Copy node_exporter
+      ansible.builtin.copy:
+        src: /home/agung/node_exporter-1.7.0.linux-amd64/node_exporter
+        dest: /usr/local/bin
+        owner: node_exporter
+        group: node_exporter
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Create Node Exporter Service File
+      file:
+        path: /etc/systemd/system/node_exporter.service
+        state: touch
+        owner: node_exporter
+        group: node_exporter
+    - name: Adding Contents to node_exporter.service
+      ansible.builtin.blockinfile:
+        dest: /etc/systemd/system/node_exporter.service
+        owner: node_exporter
+        group: node_exporter
+        block: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter
+          [Install]
+          WantedBy=multi-user.target
+    - name: Reload Daemon
+      command: systemctl daemon-reload
+    - name: Start Node Exporter
+      command: systemctl start node_exporter
+    - name: Enable Node Exporter
+      command: systemctl enable node_exporter
+#    - name: Allow Node Exporter Port 
+#      command: firewall-cmd --zone=public --add-port=9100/tcp --permanent
+#    - name: Reload Firewalld
+#      command: firewall-cmd --reload
+    - name: Removing Node Exporter package
+      file:
+        path: /home/agung/node_exporter-1.7.0.linux-amd64
+        state: absent
+    - name: Add node_exporter to prometheus.yml
+      ansible.builtin.blockinfile:
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        block: |
+          global:
+            scrape_interval: 10s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9090']
+            - job_name: 'node_exporter'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9100']
+    - name: Restart Prometheus
+      command: systemctl restart prometheus

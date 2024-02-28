@@ -1,0 +1,128 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Download & Extract Prometheus 2.49.0 Package
+      ansible.builtin.unarchive:
+        src: https://github.com/prometheus/prometheus/releases/download/v2.49.0-rc.1/prometheus-2.49.0-rc.1.linux-amd64.tar.gz
+        dest: /home/agung/
+        remote_src: yes
+    - name: Create User for Prometheus
+      ansible.builtin.user:
+        name: prometheus
+        state: present
+        create_home: no
+        shell: /bin/false
+    - name: Creates Directory for Prometheus (1/2)
+      ansible.builtin.file:
+        path: /etc/prometheus
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+    - name: Creates Directory for Prometheus (2/2)
+      ansible.builtin.file:
+        path: /var/lib/prometheus
+        state: directory
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+    - name: Copy consoles
+      ansible.builtin.copy:
+        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/consoles
+        dest: /etc/prometheus
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Copy console_libraries
+      ansible.builtin.copy:
+        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/console_libraries
+        dest: /etc/prometheus
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Copy prometheus
+      ansible.builtin.copy:
+        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/prometheus
+        dest: /usr/local/bin
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Copy promtool
+      ansible.builtin.copy:
+        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/promtool
+        dest: /usr/local/bin
+        owner: prometheus
+        group: prometheus
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Create Prometheus yml
+      file:
+        path: /etc/prometheus/prometheus.yml
+        state: touch
+        owner: prometheus
+        group: prometheus
+    - name: Adding Contents to prometheus.yml
+      blockinfile:
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        block: |
+          global:
+            scrape_interval: 10s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9090']
+    - name: Create Prometheus Service File
+      file:
+        path: /etc/systemd/system/prometheus.service
+        state: touch
+        owner: prometheus
+        group: prometheus
+    - name: Adding Contents to prometheus.service
+      blockinfile:
+        dest: /etc/systemd/system/prometheus.service
+        owner: prometheus
+        group: prometheus
+        block: |
+          [Unit]
+          Description=Prometheus
+          Wants=network-online.target
+          After=network-online.target
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          ExecStart=/usr/local/bin/prometheus \
+          --config.file /etc/prometheus/prometheus.yml \
+          --storage.tsdb.path /var/lib/prometheus/ \
+          --web.console.templates=/etc/prometheus/consoles \
+          --web.console.libraries=/etc/prometheus/console_libraries
+          [Install]
+          WantedBy=multi-user.target
+    - name: Reload Daemon
+      command: systemctl daemon-reload
+    - name: Start Prometheus
+      command: systemctl start prometheus
+    - name: Enable Prometheus
+      command: systemctl enable prometheus
+#    - name: Allow Prometheus Port 
+#      command: firewall-cmd --zone=public --add-port=9090/tcp --permanent
+#    - name: Reload Firewalld
+#      command: firewall-cmd --reload
+    - name: Removing prometheus package
+      file:
+        path: /home/agung/prometheus-2.49.0-rc.1.linux-amd64
+        state: absent

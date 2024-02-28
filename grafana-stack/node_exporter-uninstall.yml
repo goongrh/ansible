@@ -1,0 +1,25 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Stop Node Exporter
+      command: systemctl stop node_exporter
+    - name: Disable Node Exporter
+      command: systemctl disable node_exporter
+    - name: Remove User Node Exporter
+      ansible.builtin.user:
+        name: node_exporter
+        state: absent
+        remove: yes
+    - name: Remove node_exporter
+      file:
+        path: /usr/local/bin/node_exporter
+        state: absent
+    - name: Remove Node Exporter Service File
+      file:
+        path: /etc/systemd/system/node_exporter.service
+        state: absent
+    - name: Reload daemon
+      command: systemctl daemon-reload

@@ -1,0 +1,40 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Stop Grafana
+      command: systemctl stop grafana-server
+    - name: Disable Grafana
+      command: systemctl disable grafana-server
+    - name: Remove grafana.repo
+      file:
+        path: /etc/yum.repos.d/grafana.repo
+        state: absent
+    - name: Remove grafana directory (1/2)
+      file:
+        path: /etc/grafana
+        state: absent
+    - name: Remove grafana directory (2/2)
+      file:
+        path: /var/lib/grafana
+        state: absent
+    - name: Remove grafana env
+      file:
+        path: /etc/sysconfig/grafana-server
+        state: absent
+    - name: Remove grafana dir
+      file:
+        path: /usr/share/grafana
+        state: absent
+    - name: Remove grafana service
+      file:
+        path: /usr/lib/systemd/system/grafana-server.service
+        state: absent
+    - name: Uninstall Grafana
+      yum:
+        name: grafana
+        state: absent
+    - name: Reload daemon
+      command: systemctl daemon-reload

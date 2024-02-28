@@ -1,0 +1,123 @@
+---
+- hosts : server
+  become: true
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Download & Extract Blackbox Exporter 0.24.0 Package
+      ansible.builtin.unarchive:
+        src: https://github.com/prometheus/blackbox_exporter/releases/download/v0.24.0/blackbox_exporter-0.24.0.linux-amd64.tar.gz
+        dest: /home/agung
+        remote_src: yes
+    - name: Create User for Blackbox Exporter
+      ansible.builtin.user:
+        name: blackbox_exporter
+        state: present
+        create_home: no
+        shell: /bin/false
+    - name: Copy blackbox_exporter
+      ansible.builtin.copy:
+        src: /home/agung/blackbox_exporter-0.24.0.linux-amd64/blackbox_exporter
+        dest: /usr/local/bin
+        owner: blackbox_exporter
+        group: blackbox_exporter
+        mode: 0775
+        force: no
+        remote_src: yes
+    - name: Creates Directory for Blackbox
+      ansible.builtin.file:
+        dest: /etc/blackbox_exporter
+        state: directory
+        owner: blackbox_exporter
+        group: blackbox_exporter
+        mode: 0775
+    - name: Create Blackbox yml
+      file:
+        dest: /etc/blackbox_exporter/blackbox_exporter.yml
+        state: touch
+        owner: blackbox_exporter
+        group: blackbox_exporter
+    - name: Adding Contents to blackbox_exporter.yml
+      blockinfile:
+        dest: /etc/blackbox_exporter/blackbox_exporter.yml
+        owner: blackbox_exporter
+        group: blackbox_exporter
+        block: |
+          modules:
+            http_2xx:
+              prober: http
+              timeout: 5s
+              http:
+                valid_status_codes: []
+                method: GET
+    - name: Create Blackbox Exporter Service File
+      file:
+        dest: /etc/systemd/system/blackbox_exporter.service
+        state: touch
+        owner: blackbox_exporter
+        group: blackbox_exporter
+    - name: Adding Contents to blackbox_exporter.service
+      ansible.builtin.blockinfile:
+        dest: /etc/systemd/system/blackbox_exporter.service
+        owner: blackbox_exporter
+        group: blackbox_exporter
+        block: |
+          [Unit]
+          Description=Blackbox Exporter
+          Wants=network-online.target
+          After=network-online.target
+          [Service]
+          User=blackbox_exporter
+          Group=blackbox_exporter
+          Type=simple
+          ExecStart=/usr/local/bin/blackbox_exporter --config.file /etc/blackbox_exporter/blackbox_exporter.yml
+          [Install]
+          WantedBy=multi-user.target
+    - name: Reload Daemon
+      command: systemctl daemon-reload
+    - name: Start Blackbox Exporter
+      command: systemctl start blackbox_exporter
+    - name: Enable Blackbox Exporter
+      command: systemctl enable blackbox_exporter
+#    - name: Allow Blackbox Exporter Port
+#      command: firewall-cmd --zone=public --add-port=9115/tcp --permanent
+#    - name: Reload Firewalld
+#      command: firewall-cmd --reload
+    - name: Removing Blackbox Exporter package
+      file:
+        path: /home/agung/blackbox_exporter-0.24.0.linux-amd64
+        state: absent
+    - name: Add blackbox_exporter to prometheus.yml
+      ansible.builtin.blockinfile:
+        dest: /etc/prometheus/prometheus.yml
+        owner: prometheus
+        group: prometheus
+        block: |
+          global:
+            scrape_interval: 10s
+
+          scrape_configs:
+            - job_name: 'prometheus'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9090']
+            - job_name: 'node_exporter'
+              scrape_interval: 5s
+              static_configs:
+                - targets: ['localhost:9100']
+            - job_name: 'blackbox'
+              metrics_path: /probe
+              params:
+                module: [http_2xx]
+              static_configs:
+                - targets:
+                  - http://192.168.56.119:3000/
+              relabel_configs:
+                - source_labels: [__address__]
+                  target_label: __param_target
+                - source_labels: [__param_target]
+                  target_label: instance
+                - target_label: __address__
+                  replacement: localhost:9115
+    - name: Restart Prometheus
+      command: systemctl restart prometheus
