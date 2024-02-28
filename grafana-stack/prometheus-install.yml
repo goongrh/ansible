@@ -7,7 +7,7 @@
     - name: Download & Extract Prometheus 2.49.0 Package
       ansible.builtin.unarchive:
         src: https://github.com/prometheus/prometheus/releases/download/v2.49.0-rc.1/prometheus-2.49.0-rc.1.linux-amd64.tar.gz
-        dest: /home/agung/
+        dest: ~/
         remote_src: yes
     - name: Create User for Prometheus
       ansible.builtin.user:
@@ -31,7 +31,7 @@
         mode: 0775
     - name: Copy consoles
       ansible.builtin.copy:
-        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/consoles
+        src: ~/prometheus-2.49.0-rc.1.linux-amd64/consoles
         dest: /etc/prometheus
         owner: prometheus
         group: prometheus
@@ -40,7 +40,7 @@
         remote_src: yes
     - name: Copy console_libraries
       ansible.builtin.copy:
-        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/console_libraries
+        src: ~/prometheus-2.49.0-rc.1.linux-amd64/console_libraries
         dest: /etc/prometheus
         owner: prometheus
         group: prometheus
@@ -49,7 +49,7 @@
         remote_src: yes
     - name: Copy prometheus
       ansible.builtin.copy:
-        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/prometheus
+        src: ~/prometheus-2.49.0-rc.1.linux-amd64/prometheus
         dest: /usr/local/bin
         owner: prometheus
         group: prometheus
@@ -58,7 +58,7 @@
         remote_src: yes
     - name: Copy promtool
       ansible.builtin.copy:
-        src: /home/agung/prometheus-2.49.0-rc.1.linux-amd64/promtool
+        src: ~/prometheus-2.49.0-rc.1.linux-amd64/promtool
         dest: /usr/local/bin
         owner: prometheus
         group: prometheus
@@ -124,5 +124,5 @@
 #      command: firewall-cmd --reload
     - name: Removing prometheus package
       file:
-        path: /home/agung/prometheus-2.49.0-rc.1.linux-amd64
+        path: ~/prometheus-2.49.0-rc.1.linux-amd64
         state: absent
