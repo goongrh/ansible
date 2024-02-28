@@ -1,0 +1,30 @@
+---
+- hosts : all
+  become: yes
+  become_user: root
+  become_method: sudo
+  tasks :
+    - name: Update System
+      yum:
+        name: '*'
+        state: present
+    - name: Install Common Package
+      yum:
+        state: present
+        name:
+          - net-tools
+          - epel-release
+          - telnet
+          - wget
+          - curl
+          - git
+          - nano
+    - name: Turn off Firewalld
+      command: systemctl stop firewalld
+    - name: Disabling Firewalld
+      command: systemctl disable firewalld
+    - name: Disabling SELinux
+      selinux:
+        state: disabled
+    - name: Reboot system
+      command: reboot
