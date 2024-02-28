@@ -7,7 +7,7 @@
     - name: Download & Extract Node Exporter 1.7.0 Package
       ansible.builtin.unarchive:
         src: https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
-        dest: /home/agung/
+        dest: ~/
         remote_src: yes
     - name: Create User for Node Exporter
       ansible.builtin.user:
@@ -17,7 +17,7 @@
         shell: /bin/false
     - name: Copy node_exporter
       ansible.builtin.copy:
-        src: /home/agung/node_exporter-1.7.0.linux-amd64/node_exporter
+        src: ~/node_exporter-1.7.0.linux-amd64/node_exporter
         dest: /usr/local/bin
         owner: node_exporter
         group: node_exporter
@@ -58,7 +58,7 @@
 #      command: firewall-cmd --reload
     - name: Removing Node Exporter package
       file:
-        path: /home/agung/node_exporter-1.7.0.linux-amd64
+        path: ~/node_exporter-1.7.0.linux-amd64
         state: absent
     - name: Add node_exporter to prometheus.yml
       ansible.builtin.blockinfile:
