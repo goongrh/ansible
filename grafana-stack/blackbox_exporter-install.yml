@@ -7,7 +7,7 @@
     - name: Download & Extract Blackbox Exporter 0.24.0 Package
       ansible.builtin.unarchive:
         src: https://github.com/prometheus/blackbox_exporter/releases/download/v0.24.0/blackbox_exporter-0.24.0.linux-amd64.tar.gz
-        dest: /home/agung
+        dest: ~/
         remote_src: yes
     - name: Create User for Blackbox Exporter
       ansible.builtin.user:
@@ -17,7 +17,7 @@
         shell: /bin/false
     - name: Copy blackbox_exporter
       ansible.builtin.copy:
-        src: /home/agung/blackbox_exporter-0.24.0.linux-amd64/blackbox_exporter
+        src: ~/blackbox_exporter-0.24.0.linux-amd64/blackbox_exporter
         dest: /usr/local/bin
         owner: blackbox_exporter
         group: blackbox_exporter
@@ -85,7 +85,7 @@
 #      command: firewall-cmd --reload
     - name: Removing Blackbox Exporter package
       file:
-        path: /home/agung/blackbox_exporter-0.24.0.linux-amd64
+        path: ~/blackbox_exporter-0.24.0.linux-amd64
         state: absent
     - name: Add blackbox_exporter to prometheus.yml
       ansible.builtin.blockinfile:
